@@ -74,7 +74,7 @@ pub fn subsumes(ctx: &TypingCtx, a: &syntax::Type, b: &syntax::Type) -> Subtypin
         (Type::List(t1), Type::List(t2)) => subsumes(ctx, t1, t2),
 
         // Arrow types are *contravariant* in their arguments and *covariant* in their return types:
-        // "Be as lenient in what you accept and be as conservative in what you give out."
+        // "Be very lenient in what you accept and be very conservative in what you give out."
         (Type::Arrow(a1, a2), Type::Arrow(b1, b2)) => {
             // first ensure we have the same number of arguments
             if a1.len() != b1.len() {

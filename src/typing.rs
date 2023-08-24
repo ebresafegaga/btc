@@ -3,7 +3,7 @@ use crate::syntax;
 pub enum Binding {
     // A term variable binding
     TermVariable(syntax::Type),
-    // An object binding
+    // A struct binding
     TypeVariable(Vec<(syntax::Name, syntax::Type)>),
 }
 

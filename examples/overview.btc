@@ -36,15 +36,15 @@ let x = 10 ;
 
 # Definitions 
 
-object Empty {}
+struct Empty {}
 
-object Person {
+struct Person {
   name : String, 
   age : Natural
 }
 
 # Student <: Person 
-object Student  {
+struct Student {
     school : String,
     name : String,
     age : Natural

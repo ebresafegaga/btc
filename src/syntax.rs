@@ -15,7 +15,7 @@ pub enum Operator {
 pub enum Type {
     // Unit (commonly known as "void" in C-based PLs)
     Unit, 
-    // Natural
+    // A natural number
     Natural,
     // String
     String,
@@ -23,9 +23,10 @@ pub enum Type {
     Bool,
     // List[X]
     List(Box<Type>),
-    // (Int, Int) -> Bool
+    // The type for functions
+    // e.g (Int, Int) -> Bool
     Arrow(Vec<Type>, Box<Type>),
-    // e.g object Student { name: String }
+    // e.g struct Student { name: String }
     Object(Name, Vec<(Name, Type)>),
     // A place holder for error messages and can only be used internally
     Unknown

@@ -1,5 +1,7 @@
 use crate::syntax;
 
+/// The Type Checker.
+
 pub enum Binding {
     // A term variable binding
     VarExpr(syntax::Type),
@@ -15,15 +17,32 @@ pub enum SubtypingRelation {
 }
 
 pub enum Error {
+    // Expected type A, but got B
     TypeMismatch(syntax::Type, syntax::Type),
+    // We expected the type to have a particular shape
+    // e.g sometimes we know we want a "function" type, 
+    // but we might not know the exact domain and codomain type.
     Expected(syntax::Type),
+    // When calling a function, you provided an incorrect 
+    // number of arguments 
     FunctionArgMismatch,
-    ObjectArgMismatch,
+    // When constructing a struct, you provided an incorrent 
+    // number of arguments.
+    StructArgMismatch,
+    // A lambda expression has an incorrect number of arguments 
+    // based on the type it got from a type annotation.
     LambdaArgMismatch,
+    // Cannot infer a type
     NeedsMoreTypeAnnonation,
+    // You used an undefined variable.
     UnboundVariable,
+    // You used an undefined type name.
     UnboundType,
+    // We know the type of the struct and the field you used 
+    // is not present in the type.
     UnboundFieldName,
+    // Error is too complex for the type checker to give a 
+    // good error message.
     Unknown,
 }
 
@@ -183,7 +202,7 @@ pub fn infer(ctx: &mut TypingCtx, expr: &syntax::Expr) -> Result<syntax::Type, E
         Expr::Object(name, body) => {
             let objectty = lookup_ty_struct(ctx, name)?.clone();
             if objectty.len() != body.len() {
-                return Err(Error::ObjectArgMismatch);
+                return Err(Error::StructArgMismatch);
             }
 
             // O(n^2)

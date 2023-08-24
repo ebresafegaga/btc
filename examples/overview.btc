@@ -1,0 +1,54 @@
+
+# We have natural numbers  
+10 
+
+# We have strings 
+"alpha"
+
+# We have bools 
+true
+
+# We have lists 
+[1, 2, 3]
+
+# First-class functions 
+
+(function (x, y) { x + y })
+
+# Type annotations 
+
+(x : T)
+
+# If 
+(if x { } else { })
+
+# Application 
+map ([1, 2, 3], function (x) { x + y})
+
+# Let 
+let x = 10 ; 
+
+# Operators: +, -, *, /, <, >, == 
+
+# Types: Natural, Bool, ->, String, List[Int]
+# e.g String -> List[Int]
+
+
+# Definitions 
+
+object Empty {}
+
+object Person {
+  name : String, 
+  age : Natural
+}
+
+object Student <: Person {
+    school : String
+}
+
+# let a = Student { school: "foo" } ; 
+
+function add (x : Nat, y : Nat) : Nat {
+    
+}

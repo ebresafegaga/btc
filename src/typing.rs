@@ -29,8 +29,10 @@ pub enum Error {
 
 // "Context" functions
 
-pub fn assume_term_variable(ctx: &mut TypingCtx, name: &syntax::Name, ty: &syntax::Type) {
+// Put a (name, type) pair in the type checking context
+pub fn assume_var_exp(ctx: &mut TypingCtx, name: &syntax::Name, ty: &syntax::Type) {
     let binding = Binding::VarExpr(ty.clone());
+    // Because we want lexical scoping
     ctx.insert(0, (name.clone(), binding));
 }
 
@@ -129,7 +131,7 @@ pub fn infer(ctx: &mut TypingCtx, expr: &syntax::Expr) -> Result<syntax::Type, E
 
         Expr::Let(name, expr, body) => {
             let ty = infer(ctx, expr)?;
-            assume_term_variable(ctx, name, &ty);
+            assume_var_exp(ctx, name, &ty);
             infer(ctx, &body)
         }
 
@@ -215,7 +217,7 @@ pub fn check(ctx: &mut TypingCtx, expr: &syntax::Expr, ty: &syntax::Type) -> Res
                     return Err(Error::LambdaArgMismatch);
                 }
                 for (name, ty) in args.iter().zip(domain) {
-                    assume_term_variable(ctx, name, ty)
+                    assume_var_exp(ctx, name, ty)
                 }
                 check(ctx, body, &codomain)
             }

@@ -43,8 +43,11 @@ object Person {
   age : Natural
 }
 
-object Student <: Person {
-    school : String
+# Student <: Person 
+object Student  {
+    school : String,
+    name : String,
+    age : Natural
 }
 
 # let a = Student { school: "foo" } ; 

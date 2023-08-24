@@ -4,13 +4,7 @@ pub enum Binding {
     // A term variable binding
     TermVariable(syntax::Type),
     // An object binding
-    TypeVariable {
-        body: Vec<(syntax::Name, syntax::Type)>,
-        parent: Option<syntax::Name>,
-    },
-    // A sub type relation
-    // A <: B means A is a subtype of B
-    Subtype(syntax::Name, syntax::Name),
+    TypeVariable(Vec<(syntax::Name, syntax::Type)>),
 }
 
 pub type TypingCtx = Vec<(syntax::Name, Binding)>;
@@ -46,7 +40,7 @@ pub fn lookup_type_variable<'a>(
 ) -> Result<&'a Vec<(syntax::Name, syntax::Type)>, Error> {
     ctx.iter()
         .filter_map(|(x, binding)| match binding {
-            Binding::TypeVariable { body, .. } => Some((x, body)),
+            Binding::TypeVariable(body) => Some((x, body)),
             _ => None,
         })
         .find_map(|(x, ty)| if x == name { Some(ty) } else { None })

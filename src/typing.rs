@@ -2,9 +2,9 @@ use crate::syntax;
 
 pub enum Binding {
     // A term variable binding
-    TermVariable(syntax::Type),
+    VarExpr(syntax::Type),
     // A struct binding
-    TypeVariable(Vec<(syntax::Name, syntax::Type)>),
+    TyStruct(Vec<(syntax::Name, syntax::Type)>),
 }
 
 pub type TypingCtx = Vec<(syntax::Name, Binding)>;
@@ -30,7 +30,7 @@ pub enum Error {
 // "Context" functions
 
 pub fn assume_term_variable(ctx: &mut TypingCtx, name: &syntax::Name, ty: &syntax::Type) {
-    let binding = Binding::TermVariable(ty.clone());
+    let binding = Binding::VarExpr(ty.clone());
     ctx.insert(0, (name.clone(), binding));
 }
 
@@ -40,7 +40,7 @@ pub fn lookup_type_variable<'a>(
 ) -> Result<&'a Vec<(syntax::Name, syntax::Type)>, Error> {
     ctx.iter()
         .filter_map(|(x, binding)| match binding {
-            Binding::TypeVariable(body) => Some((x, body)),
+            Binding::TyStruct(body) => Some((x, body)),
             _ => None,
         })
         .find_map(|(x, ty)| if x == name { Some(ty) } else { None })
@@ -53,7 +53,7 @@ pub fn lookup_term_variable<'a>(
 ) -> Result<&'a syntax::Type, Error> {
     ctx.iter()
         .filter_map(|(x, binding)| match binding {
-            Binding::TermVariable(ty) => Some((x, ty)),
+            Binding::VarExpr(ty) => Some((x, ty)),
             _ => None,
         })
         .find_map(|(x, ty)| if x == name { Some(ty) } else { None })

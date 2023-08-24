@@ -34,7 +34,7 @@ pub fn assume_term_variable(ctx: &mut TypingCtx, name: &syntax::Name, ty: &synta
     ctx.insert(0, (name.clone(), binding));
 }
 
-pub fn lookup_type_variable<'a>(
+pub fn lookup_ty_struct<'a>(
     ctx: &'a TypingCtx,
     name: &'a syntax::Name,
 ) -> Result<&'a Vec<(syntax::Name, syntax::Type)>, Error> {
@@ -47,7 +47,7 @@ pub fn lookup_type_variable<'a>(
         .ok_or(Error::UnboundType)
 }
 
-pub fn lookup_term_variable<'a>(
+pub fn lookup_var_expr<'a>(
     ctx: &'a TypingCtx,
     name: &'a syntax::Name,
 ) -> Result<&'a syntax::Type, Error> {
@@ -121,7 +121,7 @@ pub fn infer(ctx: &mut TypingCtx, expr: &syntax::Expr) -> Result<syntax::Type, E
         Expr::Natural(..) => Ok(Type::Natural),
         Expr::String(..) => Ok(Type::String),
         Expr::Variable(name) => {
-            let ty = lookup_term_variable(ctx, &name)?;
+            let ty = lookup_var_expr(ctx, &name)?;
             Ok(ty.clone())
         }
         Expr::Bool(..) => Ok(Type::Bool),
@@ -179,7 +179,7 @@ pub fn infer(ctx: &mut TypingCtx, expr: &syntax::Expr) -> Result<syntax::Type, E
         },
 
         Expr::Object(name, body) => {
-            let objectty = lookup_type_variable(ctx, name)?.clone();
+            let objectty = lookup_ty_struct(ctx, name)?.clone();
             if objectty.len() != body.len() {
                 return Err(Error::ObjectArgMismatch);
             }

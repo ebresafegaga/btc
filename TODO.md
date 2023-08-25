@@ -4,4 +4,4 @@
 [ ] Parser
 [ ] REPL
 [ ] Type Variables for structs
-[ ] Sequencing expressions 
+[ ] Sequencing expressions

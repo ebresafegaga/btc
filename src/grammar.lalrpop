@@ -5,8 +5,8 @@ use std::str::FromStr;
 
 grammar;
 
-Comma<Rule>: Vec<Rule> = { 
-    <mut v:(<Rule> ",")*> <e:Rule?> => match e {
+Comma<Rule>: Vec<Rule> = {
+    <mut v:(<Rule> ",")*> <e:Rule?> => match e { 
         None => v,
         Some(e) => {
             v.push(e);
@@ -31,6 +31,17 @@ pub TermStructBody : (syntax::Name, syntax::Expr) = {
     <name: Identifier> ":" <e: Expr> => (name, e)
 }
 
+// No operator precedence for now
+pub Operator : syntax::Operator = {
+    "+" => Operator::Add, 
+    "-" => Operator::Sub, 
+    "*" => Operator::Mul, 
+    "/" => Operator::Div, 
+    ">" => Operator::Gt, 
+    "<" => Operator::Lt, 
+    "==" => Operator::Eq,
+}
+
 
 pub Type : syntax::Type = {
     "Unit" => Type::Unit,
@@ -44,7 +55,7 @@ pub Type : syntax::Type = {
 
 pub Expr : syntax::Expr = {
     "(" <e: Expr> ")" => e, 
-    "()" => Expr::Unit, 
+    "unit" => Expr::Unit, 
     <id: Identifier> => Expr::Variable(id),
     <n: Nat> => Expr::Natural(n), 
     // Hack for now
@@ -52,22 +63,50 @@ pub Expr : syntax::Expr = {
     "true" => Expr::Bool(true), 
     "false" => Expr::Bool(false),
     "(" <e: Expr> ":" <ty: Type> ")" => Expr::Annotation(Box::new(e), ty),
-    "let" <name: Identifier>  "=" <e: Expr> "{" <body: Expr?> "}" => match body {
+    "let" <name: Identifier>  "=" <e: Expr> ";" "(" <body: Expr?> ")" => match body {
         None => Expr::Let(name, Box::new(e), Box::new(Expr::Unit)), 
         Some(body) =>  Expr::Let(name, Box::new(e), Box::new(body)), 
     },
     "[" <elems: Comma<Expr>> "]" => Expr::List(elems), 
+
     "if" <predicate: Expr> "{" <t: Expr> "}" "else" "{" <f: Expr> "}" => 
         Expr::If(Box::new(predicate), Box::new(t), Box::new(f)), 
-    "function" "(" <args: Comma<Identifier>> ")" "->" "{" <body: Expr> "}" => 
-        Expr::Lambda(args, Box::new(body)),
 
-    <f: Expr> "(" <args: Comma<Expr>> ")" => Expr::Application(Box::new(f), args),
+    "function" "(" <args: Comma<Identifier>> ")" "->" "{" <body: Expr> "}" => { 
+        let args = if args.is_empty() { vec![ String::from("unit") ] } else { args };
+        Expr::Lambda(args, Box::new(body)) 
+    },
 
-   //  <name: Identifier> "{" <body: Comma<TermStructBody>> "}" => Expr::Struct(name, body),
+    <f: Expr> "(" <args: Comma<Expr>> ")" => {
+        let args = if args.is_empty() { vec![Expr::Unit] } else { args };
+        Expr::Application(Box::new(f), args)
+    },
 
+    "(" <name: Identifier> "{" <body: Comma<TermStructBody>> "}" ")" => Expr::Struct(name, body),
+
+    "(" <a: Expr> <op: Operator> <b: Expr> ")" => Expr::Primitive(op, Box::new(a), Box::new(b)),
 }
 
-// pub Def : syntax::Def = {
-//     "(" ")" => Def::Unknown("", Expr::Unknown, Type::Unknown)
-// };
+pub Return : Type = {
+    "->" <ty: Type> => ty,
+        => Type::Unit,
+}
+
+pub Def : syntax::Def = {
+    "struct" <id: Identifier> "{"  <body: Comma<TyStructBody>>  "}" => Def::Struct(id, body), 
+    "function" <name: Identifier> "("  <args: Comma<TyStructBody>> ")" <codomain: Return> "{" <body: Expr> "}" => {
+        let (args, tys) : (Vec<_>, Vec<_>)= args.into_iter().unzip();
+        let domain = if tys.is_empty() { vec![Type::Unit] } else { tys };
+        let f = Type::Arrow(domain, Box::new(codomain)); 
+        let lambda = Expr::Lambda(args, Box::new(body));
+        Def::Fun(name, Expr::Annotation(Box::new(lambda), f))
+    }
+};
+
+pub Program : Vec<syntax::Def> = {
+    Def => vec![<>], 
+    <mut p: Program> <d: Def> => {
+        p.push(d); 
+        p
+    }
+}

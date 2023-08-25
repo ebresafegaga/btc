@@ -71,7 +71,7 @@ pub enum Expr {
 #[derive(Debug)]
 pub enum Def {
     // Top level struct declaration
-    Struct(Name, Vec<(Name, Type)>, Name),
+    Struct(Name, Vec<(Name, Type)>),
     // Top level function
-    Fun(Name, Expr, Type),
+    Fun(Name, Expr),
 }

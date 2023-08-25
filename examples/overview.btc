@@ -50,8 +50,16 @@ struct Student {
     age : Natural
 }
 
+function test() -> Unit {
+    let person = (Person {
+      school : "foo", 
+      name "bar"
+      age : 0
+    });
+} 
+
 # let a = Student { school: "foo" } ; 
 
-function add (x : Nat, y : Nat) : Nat {
+function add (x : Nat, y : Nat) ->  Nat {
     
 }

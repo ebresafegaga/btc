@@ -1,0 +1,73 @@
+/// Btc grammar.
+use crate::syntax;
+use crate::syntax::*;
+use std::str::FromStr;
+
+grammar;
+
+Comma<Rule>: Vec<Rule> = { 
+    <mut v:(<Rule> ",")*> <e:Rule?> => match e {
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
+    }
+};
+
+pub Nat : u32 = {
+    <s:r"[0-9]+"> => u32::from_str(s).unwrap(),
+}
+
+pub Identifier : syntax::Name = {
+    <s: r"_?[a-zA-Z][_a-zA-Z0-9-']*"> => String::from(s),
+}
+
+pub TyStructBody : (syntax::Name, syntax::Type) = {
+    <name: Identifier> ":" <ty: Type> => (name, ty),
+}
+
+pub TermStructBody : (syntax::Name, syntax::Expr) = {
+    <name: Identifier> ":" <e: Expr> => (name, e)
+}
+
+
+pub Type : syntax::Type = {
+    "Unit" => Type::Unit,
+    "Natural" => Type::Natural, 
+    "String" => Type::String, 
+    "Bool" => Type::Bool,
+    "List" "[" <t: Type> "]" => Type::List(Box::new(t)),
+    "(" <tys : Comma<Type>> ")" "->" <result: Type> => Type::Arrow(tys, Box::new(result)),
+    <name : Identifier> "{"  <body: Comma<TyStructBody>> "}" => Type::Struct(name, body),
+}
+
+pub Expr : syntax::Expr = {
+    "(" <e: Expr> ")" => e, 
+    "()" => Expr::Unit, 
+    <id: Identifier> => Expr::Variable(id),
+    <n: Nat> => Expr::Natural(n), 
+    // Hack for now
+    "\"" <s: Identifier> "\"" => Expr::String(s),
+    "true" => Expr::Bool(true), 
+    "false" => Expr::Bool(false),
+    "(" <e: Expr> ":" <ty: Type> ")" => Expr::Annotation(Box::new(e), ty),
+    "let" <name: Identifier>  "=" <e: Expr> "{" <body: Expr?> "}" => match body {
+        None => Expr::Let(name, Box::new(e), Box::new(Expr::Unit)), 
+        Some(body) =>  Expr::Let(name, Box::new(e), Box::new(body)), 
+    },
+    "[" <elems: Comma<Expr>> "]" => Expr::List(elems), 
+    "if" <predicate: Expr> "{" <t: Expr> "}" "else" "{" <f: Expr> "}" => 
+        Expr::If(Box::new(predicate), Box::new(t), Box::new(f)), 
+    "function" "(" <args: Comma<Identifier>> ")" "->" "{" <body: Expr> "}" => 
+        Expr::Lambda(args, Box::new(body)),
+
+    <f: Expr> "(" <args: Comma<Expr>> ")" => Expr::Application(Box::new(f), args),
+
+   //  <name: Identifier> "{" <body: Comma<TermStructBody>> "}" => Expr::Struct(name, body),
+
+}
+
+// pub Def : syntax::Def = {
+//     "(" ")" => Def::Unknown("", Expr::Unknown, Type::Unknown)
+// };

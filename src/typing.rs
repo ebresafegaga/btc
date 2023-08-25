@@ -1,35 +1,42 @@
+/// The Type Checker.
 use crate::syntax;
 
-/// The Type Checker.
-
+// An element in the type checking context
+#[derive(Debug)]
 pub enum Binding {
     // A term variable binding
     VarExpr(syntax::Type),
-    // A struct binding
+    // A struct binding (definition)
     TyStruct(Vec<(syntax::Name, syntax::Type)>),
 }
 
-pub type TypingCtx = Vec<(syntax::Name, Binding)>;
+// The typing context contains information about variable bindings
+// and type declarations
+pub type TypingContext = Vec<(syntax::Name, Binding)>;
 
+// This describes the subtyping relation between two types
+#[derive(Debug, PartialEq, Eq)]
 pub enum SubtypingRelation {
     Subsumes,
     Norelation,
 }
 
+// A type (checking) error
+#[derive(Debug)]
 pub enum Error {
     // Expected type A, but got B
     TypeMismatch(syntax::Type, syntax::Type),
     // We expected the type to have a particular shape
-    // e.g sometimes we know we want a "function" type, 
+    // e.g sometimes we know we want a "function" type,
     // but we might not know the exact domain and codomain type.
     Expected(syntax::Type),
-    // When calling a function, you provided an incorrect 
-    // number of arguments 
+    // When calling a function, you provided an incorrect
+    // number of arguments
     FunctionArgMismatch,
-    // When constructing a struct, you provided an incorrent 
+    // When constructing a struct, you provided an incorrent
     // number of arguments.
     StructArgMismatch,
-    // A lambda expression has an incorrect number of arguments 
+    // A lambda expression has an incorrect number of arguments
     // based on the type it got from a type annotation.
     LambdaArgMismatch,
     // Cannot infer a type
@@ -38,10 +45,10 @@ pub enum Error {
     UnboundVariable,
     // You used an undefined type name.
     UnboundType,
-    // We know the type of the struct and the field you used 
+    // We know the type of the struct and the field you used
     // is not present in the type.
     UnboundFieldName,
-    // Error is too complex for the type checker to give a 
+    // Error is too complex for the type checker to give a
     // good error message.
     Unknown,
 }
@@ -49,14 +56,15 @@ pub enum Error {
 // "Context" functions
 
 // Put a (name, type) pair in the type checking context
-pub fn assume_var_exp(ctx: &mut TypingCtx, name: &syntax::Name, ty: &syntax::Type) {
+pub fn assume_var_exp(ctx: &mut TypingContext, name: &syntax::Name, ty: &syntax::Type) {
     let binding = Binding::VarExpr(ty.clone());
     // Because we want lexical scoping
     ctx.insert(0, (name.clone(), binding));
 }
 
+// Search the context for a specific struct decl
 pub fn lookup_ty_struct<'a>(
-    ctx: &'a TypingCtx,
+    ctx: &'a TypingContext,
     name: &'a syntax::Name,
 ) -> Result<&'a Vec<(syntax::Name, syntax::Type)>, Error> {
     ctx.iter()
@@ -68,8 +76,9 @@ pub fn lookup_ty_struct<'a>(
         .ok_or(Error::UnboundType)
 }
 
+// Search the context for a variable binding
 pub fn lookup_var_expr<'a>(
-    ctx: &'a TypingCtx,
+    ctx: &'a TypingContext,
     name: &'a syntax::Name,
 ) -> Result<&'a syntax::Type, Error> {
     ctx.iter()
@@ -82,7 +91,8 @@ pub fn lookup_var_expr<'a>(
 }
 
 // Given a context Ctx, a type A, and a type B, is A <: B in Ctx?
-pub fn subsumes(ctx: &TypingCtx, a: &syntax::Type, b: &syntax::Type) -> SubtypingRelation {
+// or is A a subtype of B?
+pub fn subsumes(ctx: &TypingContext, a: &syntax::Type, b: &syntax::Type) -> SubtypingRelation {
     use syntax::*;
     match (a, b) {
         // A base type is a subtype of itself
@@ -113,7 +123,7 @@ pub fn subsumes(ctx: &TypingCtx, a: &syntax::Type, b: &syntax::Type) -> Subtypin
         // For A <: B to hold for object types A and B, then A must, at least,
         // have *all* the fields present in B, and foreach field (bi: Bi) present
         // in B, A must have a corresponding (ai: Ai) where Ai <: Bi
-        (Type::Object(_, body1), Type::Object(_, body2)) => {
+        (Type::Struct(_, body1), Type::Struct(_, body2)) => {
             for (name, t1) in body2 {
                 let field = body1
                     .iter()
@@ -135,7 +145,8 @@ pub fn subsumes(ctx: &TypingCtx, a: &syntax::Type, b: &syntax::Type) -> Subtypin
 
 // Inference mode
 // e => T
-pub fn infer(ctx: &mut TypingCtx, expr: &syntax::Expr) -> Result<syntax::Type, Error> {
+// Infer the type of an expression
+pub fn infer(ctx: &mut TypingContext, expr: &syntax::Expr) -> Result<syntax::Type, Error> {
     use syntax::*;
     match expr {
         Expr::Unit => Ok(Type::Unit),
@@ -199,7 +210,7 @@ pub fn infer(ctx: &mut TypingCtx, expr: &syntax::Expr) -> Result<syntax::Type, E
             }
         },
 
-        Expr::Object(name, body) => {
+        Expr::Struct(name, body) => {
             let objectty = lookup_ty_struct(ctx, name)?.clone();
             if objectty.len() != body.len() {
                 return Err(Error::StructArgMismatch);
@@ -218,16 +229,20 @@ pub fn infer(ctx: &mut TypingCtx, expr: &syntax::Expr) -> Result<syntax::Type, E
                 })
                 .collect::<Result<(), _>>()?;
 
-            Ok(Type::Object(name.clone(), objectty))
+            Ok(Type::Struct(name.clone(), objectty))
         }
 
         Expr::List(..) | Expr::Lambda(..) | Expr::If(..) => Err(Error::NeedsMoreTypeAnnonation),
+
+        // Only used internally
+        Expr::Unknown => Ok(Type::Unknown),
     }
 }
 
 // Checking mode
 // e <= T
-pub fn check(ctx: &mut TypingCtx, expr: &syntax::Expr, ty: &syntax::Type) -> Result<(), Error> {
+// Check that an expression has a specific type
+pub fn check(ctx: &mut TypingContext, expr: &syntax::Expr, ty: &syntax::Type) -> Result<(), Error> {
     use syntax::*;
     match expr {
         Expr::Lambda(args, body) => match ty {
@@ -268,5 +283,27 @@ pub fn check(ctx: &mut TypingCtx, expr: &syntax::Expr, ty: &syntax::Type) -> Res
                 SubtypingRelation::Norelation => Err(Error::TypeMismatch(inferty, ty.clone())),
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::syntax::*;
+
+    #[test]
+    fn test_subtyping() {
+        let top = Type::Struct(String::from("Top"), vec![]);
+        let person = Type::Struct(
+            String::from("Person"),
+            vec![(String::from("name"), Type::String)],
+        );
+        let ctx = Vec::new();
+        let result = subsumes(&ctx, &person, &top);
+        assert_eq!(
+            result,
+            SubtypingRelation::Subsumes,
+            "Any struct is a subtype of the empty struct"
+        )
     }
 }

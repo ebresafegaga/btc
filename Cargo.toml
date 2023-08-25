@@ -1,8 +1,12 @@
 [package]
 name = "btc"
 version = "0.1.0"
+authors = ["Oghenevwogaga Ebresafe <ebresafegaga@gmail.com>"]
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[build-dependencies]
+lalrpop = "0.20.0"
 
 [dependencies]
+regex = "~1.7.3"
+lalrpop-util = { version = "0.20.0", features = ["lexer"] }

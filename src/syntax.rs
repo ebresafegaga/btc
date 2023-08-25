@@ -1,5 +1,6 @@
 pub type Name = String;
 
+#[derive(Debug)]
 pub enum Operator {
     Add,
     Sub,
@@ -11,10 +12,10 @@ pub enum Operator {
 }
 
 // A type
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Type {
     // Unit (commonly known as "void" in C-based PLs)
-    Unit, 
+    Unit,
     // A natural number
     Natural,
     // String
@@ -26,13 +27,14 @@ pub enum Type {
     // The type for functions
     // e.g (Int, Int) -> Bool
     Arrow(Vec<Type>, Box<Type>),
-    // e.g struct Student { name: String }
-    Object(Name, Vec<(Name, Type)>),
-    // A place holder for error messages and can only be used internally
-    Unknown
+    // e.g Student { name: String }
+    Struct(Name, Vec<(Name, Type)>),
+    // A place holder for error messages (and should only be used internally)
+    Unknown,
 }
 
 // An expression
+#[derive(Debug)]
 pub enum Expr {
     // e.g ()
     Unit,
@@ -46,7 +48,7 @@ pub enum Expr {
     Bool(bool),
     // e.g (true : Bool)
     Annotation(Box<Expr>, Type),
-    // e.g let name = "foo" ; length(name)
+    // e.g let name = "foo"; length (name)
     Let(Name, Box<Expr>, Box<Expr>),
     // e.g [1, 3, 3]
     List(Vec<Expr>),
@@ -59,11 +61,17 @@ pub enum Expr {
     // e.g 1 + 2, x < 10
     Primitive(Operator, Box<Expr>, Box<Expr>),
     // e.g Student { name: "foo"}
-    Object(Name, Vec<(Name, Expr)>),
+    Struct(Name, Vec<(Name, Expr)>),
+    // Also meant to be used internally. Can be useful for
+    // creating "dummy" placeholders while developing / debugging.
+    Unknown,
 }
 
 // Top level definitions
+#[derive(Debug)]
 pub enum Def {
-    Type(Name, Vec<(Name, Type)>, Name),
+    // Top level struct declaration
+    Struct(Name, Vec<(Name, Type)>, Name),
+    // Top level function
     Fun(Name, Expr, Type),
 }

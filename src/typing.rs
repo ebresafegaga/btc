@@ -1,3 +1,5 @@
+use std::{rc::Rc, cell::RefCell};
+
 /// The Type Checker.
 use crate::syntax;
 
@@ -10,9 +12,18 @@ pub enum Binding {
     TyStruct(Vec<(syntax::Name, syntax::Type)>),
 }
 
+// #[derive(Default)]
+// pub struct TypingConext {
+//     current: Rc<Vec<(syntax::Name, Binding)>>,
+//     previous: RefCell<Option<Rc<TypingConext>>>,
+// }
+
 // The typing context contains information about variable bindings
 // and type declarations
+// TODO; Use a nested environment!!
 pub type TypingContext = Vec<(syntax::Name, Binding)>;
+
+
 
 // This describes the subtyping relation between two types
 #[derive(Debug, PartialEq, Eq)]
@@ -58,7 +69,17 @@ pub enum Error {
 // Put a (name, type) pair in the type checking context
 pub fn assume_var_exp(ctx: &mut TypingContext, name: &syntax::Name, ty: &syntax::Type) {
     let binding = Binding::VarExpr(ty.clone());
-    // Because we want lexical scoping
+    // Because we want lexical bindings
+    ctx.insert(0, (name.clone(), binding));
+}
+
+// Put a (name, struct) definition in the type checking context
+pub fn assume_ty_struct(
+    ctx: &mut TypingContext,
+    name: &syntax::Name,
+    ty: &Vec<(syntax::Name, syntax::Type)>,
+) {
+    let binding = Binding::TyStruct(ty.clone());
     ctx.insert(0, (name.clone(), binding));
 }
 
@@ -284,6 +305,36 @@ pub fn check(ctx: &mut TypingContext, expr: &syntax::Expr, ty: &syntax::Type) ->
             }
         }
     }
+}
+
+// fn typecheck_type
+
+fn stdlib_typing_context() -> TypingContext {
+    Vec::new()
+}
+
+fn process_toplevel(ctx: &mut TypingContext, def: &syntax::Def) -> Result<(), Error> {
+    use syntax::*;
+    match def {
+        Def::Struct(name, ty) => {
+            assume_ty_struct(ctx, &name, &ty);
+            Ok(())
+        }
+        Def::Fun(name, expr) => {
+            // We expect expr to be annotated with a type
+            let ty = infer(ctx, &expr)?;
+            assume_var_exp(ctx, &name, &ty);
+            Ok(())
+        }
+    }
+}
+
+fn typecheck_program(program: &Vec<syntax::Def>) -> Result<(), Error> {
+    let mut ctx = TypingContext::default();
+    for def in program {
+        process_toplevel(&mut ctx, def)?;
+    }
+    Ok(())
 }
 
 #[cfg(test)]

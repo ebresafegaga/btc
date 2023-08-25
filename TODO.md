@@ -5,3 +5,4 @@
 * [ ] REPL
 * [ ] Type Variables for structs
 * [ ] Sequencing expressions
+* [ ] A tree-walking interpreter

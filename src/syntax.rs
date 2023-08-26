@@ -1,3 +1,5 @@
+use std::fmt;
+
 pub type Name = String;
 
 #[derive(Debug)]
@@ -38,6 +40,57 @@ pub enum Type {
     Named(Name),
     // A place holder for error messages (and should only be used internally)
     Unknown,
+}
+
+// A simple pretty printer for types
+impl fmt::Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Type::Unit => write!(f, "()"),
+            Type::Natural => write!(f, "Natural"),
+            Type::String => write!(f, "String"),
+            Type::Bool => write!(f, "Bool"),
+            Type::Named(name) => write!(f, "{}", name),
+            Type::Unknown => write!(f, "?"),
+
+            Type::List(ty) => {
+                write!(f, "List[")?;
+                ty.fmt(f)?;
+                write!(f, "]")
+            }
+
+            Type::Arrow(domains, codomain) => {
+                write!(f, "(")?;
+                for domain in domains {
+                    domain.fmt(f)?;
+                    // this prints an extra , after the last type
+                    write!(f, ", ")?;
+                }
+                write!(f, ")")?;
+                write!(f, " -> ")?;
+                codomain.fmt(f)
+            }
+
+            Type::Struct(name, fields) => {
+                write!(f, "{}", name)?;
+                write!(f, "{{")?;
+
+                for (name, ty) in fields {
+                    write!(f, "{}", name)?;
+                    write!(f, " ")?;
+                    ty.fmt(f)?;
+                }
+                
+                write!(f, "}}")
+            }
+        }
+    }
+}
+
+#[test]
+fn test() {
+    let t = Type::List(Box::new(Type::String));
+    println!("{}", t)
 }
 
 // A source location

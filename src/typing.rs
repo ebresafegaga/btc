@@ -185,7 +185,7 @@ pub fn subsumes(
             subsumes(ctx, a2, b2)
         }
 
-        // For A <: B to hold for object types A and B, then A must, at least,
+        // For A <: B to hold for struct types A and B, then A must, at least,
         // have *all* the fields present in B, and foreach field (bi: Bi) present
         // in B, A must have a corresponding (ai: Ai) where Ai <: Bi
         (Type::Struct(_, body1), Type::Struct(_, body2)) => {

@@ -62,6 +62,8 @@ pub enum Expr {
     Primitive(Operator, Box<Expr>, Box<Expr>),
     // e.g Student { name: "foo"}
     Struct(Name, Vec<(Name, Expr)>),
+    // e.g person.name
+    StructIndex(Box<Expr>, Name),
     // Also meant to be used internally. Can be useful for
     // creating "dummy" placeholders while developing / debugging.
     Unknown,

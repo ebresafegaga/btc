@@ -1,4 +1,4 @@
-use std::{rc::Rc, cell::RefCell};
+use std::{cell::RefCell, rc::Rc};
 
 /// The Type Checker.
 use crate::syntax;
@@ -22,8 +22,6 @@ pub enum Binding {
 // and type declarations
 // TODO; Use a nested environment!!
 pub type TypingContext = Vec<(syntax::Name, Binding)>;
-
-
 
 // This describes the subtyping relation between two types
 #[derive(Debug, PartialEq, Eq)]
@@ -59,6 +57,10 @@ pub enum Error {
     // We know the type of the struct and the field you used
     // is not present in the type.
     UnboundFieldName,
+    // Indexing a struct with a field that is not bound in the
+    // the expected struct type. The vector contains the fields
+    // available in the structure
+    FieldNotFound(syntax::Name, Vec<(syntax::Name, syntax::Type)>),
     // Error is too complex for the type checker to give a
     // good error message.
     Unknown,
@@ -185,6 +187,24 @@ pub fn infer(ctx: &mut TypingContext, expr: &syntax::Expr) -> Result<syntax::Typ
             assume_var_exp(ctx, name, &ty);
             infer(ctx, &body)
         }
+
+        Expr::StructIndex(expr, field) => match infer(ctx, expr)? {
+            Type::Struct(name, fields) => {
+                let ty = fields
+                    .iter()
+                    .find_map(|(name, ty)| if name == field { Some(ty) } else { None });
+                match ty {
+                    None => return Err(Error::FieldNotFound(name, fields)),
+                    Some(ty) => Ok(ty.clone()),
+                }
+            }
+            _ => {
+                return Err(Error::Expected(Type::Struct(
+                    String::from("Unknown"),
+                    vec![],
+                )))
+            }
+        },
 
         Expr::Application(f, args) => {
             let fty = infer(ctx, f)?;

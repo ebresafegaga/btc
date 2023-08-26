@@ -10,3 +10,4 @@ lalrpop = "0.20.0"
 [dependencies]
 regex = "~1.7.3"
 lalrpop-util = { version = "0.20.0", features = ["lexer"] }
+clap = { version = "3.1.6", features = ["derive"] }

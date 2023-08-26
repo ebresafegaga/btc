@@ -48,6 +48,7 @@ pub Type : syntax::Type = {
     "Natural" => Type::Natural, 
     "String" => Type::String, 
     "Bool" => Type::Bool,
+    "(" <name: Identifier> ")" => Type::Named(name),
     "List" "[" <t: Type> "]" => Type::List(Box::new(t)),
     "(" <tys : Comma<Type>> ")" "->" <result: Type> => Type::Arrow(tys, Box::new(result)),
     <name : Identifier> "{"  <body: Comma<TyStructBody>> "}" => Type::Struct(name, body),
@@ -55,18 +56,26 @@ pub Type : syntax::Type = {
 
 pub Expr : syntax::Expr = {
     "(" <e: Expr> ")" => e, 
-    "unit" => Expr::Unit, 
+
+    "unit" => Expr::Unit,
+
     <id: Identifier> => Expr::Variable(id),
+    
     <n: Nat> => Expr::Natural(n), 
+
     // Hack for now
     "\"" <s: Identifier> "\"" => Expr::String(s),
+
     "true" => Expr::Bool(true), 
     "false" => Expr::Bool(false),
+
     "(" <e: Expr> ":" <ty: Type> ")" => Expr::Annotation(Box::new(e), ty),
+
     "let" <name: Identifier>  "=" <e: Expr> ";" "(" <body: Expr?> ")" => match body {
         None => Expr::Let(name, Box::new(e), Box::new(Expr::Unit)), 
         Some(body) =>  Expr::Let(name, Box::new(e), Box::new(body)), 
     },
+
     "[" <elems: Comma<Expr>> "]" => Expr::List(elems), 
 
     "if" <predicate: Expr> "{" <t: Expr> "}" "else" "{" <f: Expr> "}" => 

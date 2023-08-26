@@ -29,6 +29,13 @@ pub enum Type {
     Arrow(Vec<Type>, Box<Type>),
     // e.g Student { name: String }
     Struct(Name, Vec<(Name, Type)>),
+    // This is a variable that references a concerete type.
+    // This is not a unification type variable or a universally quantified
+    // type variable or an existentially quantified type variable.
+    // It is used to name a previously defiend type
+    // e.g (String, Natural) -> Student
+    // where `Student` is a struct
+    Named(Name),
     // A place holder for error messages (and should only be used internally)
     Unknown,
 }

@@ -3,6 +3,9 @@
 * [ ] Allow pattern matching 
 * [x] Parser
 * [ ] REPL
-* [ ] Type Variables for structs
+* [x] Type Variables for structs
 * [ ] Sequencing expressions
-* [ ] A tree-walking interpreter
+* [ ] A CEK-style interpreter
+* [ ] A "TODO" expression that keeps track of the context
+* [ ] Add comments to grammar
+* [ ] Type check types

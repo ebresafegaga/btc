@@ -1,65 +1,10 @@
 
-# We have natural numbers  
-10 
-
-# We have strings 
-"alpha"
-
-# We have bools 
-true
-
-# We have lists 
-[1, 2, 3]
-
-# First-class functions 
-
-(function (x, y) { x + y })
-
-# Type annotations 
-
-(x : T)
-
-# If 
-(if x { } else { })
-
-# Application 
-map ([1, 2, 3], function (x) { x + y})
-
-# Let 
-let x = 10 ; 
-
-# Operators: +, -, *, /, <, >, == 
-
-# Types: Natural, Bool, ->, String, List[Int]
-# e.g String -> List[Int]
-
-
-# Definitions 
-
-struct Empty {}
-
 struct Person {
   name : String, 
-  age : Natural
+  age : Natural 
 }
 
-# Student <: Person 
-struct Student {
-    school : String,
-    name : String,
-    age : Natural
-}
-
-function test() -> Unit {
-    let person = (Person {
-      school : "foo", 
-      name "bar"
-      age : 0
-    });
+function simple() -> (Person) {
+    (Person { name: "foo", age:10 })
 } 
 
-# let a = Student { school: "foo" } ; 
-
-function add (x : Nat, y : Nat) ->  Nat {
-    
-}

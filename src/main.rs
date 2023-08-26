@@ -1,12 +1,10 @@
-use parser::grammar;
-
+mod cli;
+mod exec;
 mod parser;
 mod repl;
 mod syntax;
 mod typing;
 
 fn main() {
-    let source = "";
-    let ast = grammar::ProgramParser::new().parse(source);
-    
+    cli::run()
 }

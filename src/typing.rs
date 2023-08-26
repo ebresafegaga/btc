@@ -113,16 +113,36 @@ pub fn lookup_var_expr<'a>(
         .ok_or(Error::UnboundVariable)
 }
 
+// This returns a type with the *outer* `Named` layers peeled off
+pub fn resolve_type<'a>(ctx: &'a TypingContext, ty: &syntax::Type) -> Result<syntax::Type, Error> {
+    use syntax::*;
+    match ty {
+        Type::Named(name) => {
+            let resolved = lookup_ty_struct(ctx, name)?;
+            Ok(Type::Struct(name.clone(), resolved.clone())) // Not good
+        }
+
+        ty => Ok(ty.clone()), // Not good
+    }
+}
+
 // Given a context Ctx, a type A, and a type B, is A <: B in Ctx?
 // or is A a subtype of B?
-pub fn subsumes(ctx: &TypingContext, a: &syntax::Type, b: &syntax::Type) -> SubtypingRelation {
+pub fn subsumes(
+    ctx: &TypingContext,
+    a: &syntax::Type,
+    b: &syntax::Type,
+) -> Result<SubtypingRelation, Error> {
     use syntax::*;
-    match (a, b) {
+    let a = resolve_type(ctx, a)?;
+    let b = resolve_type(ctx, b)?;
+
+    match (&a, &b) {
         // A base type is a subtype of itself
-        (Type::Unit, Type::Unit) => SubtypingRelation::Subsumes,
-        (Type::Natural, Type::Natural) => SubtypingRelation::Subsumes,
-        (Type::Bool, Type::Bool) => SubtypingRelation::Subsumes,
-        (Type::String, Type::String) => SubtypingRelation::Subsumes,
+        (Type::Unit, Type::Unit) => Ok(SubtypingRelation::Subsumes),
+        (Type::Natural, Type::Natural) => Ok(SubtypingRelation::Subsumes),
+        (Type::Bool, Type::Bool) => Ok(SubtypingRelation::Subsumes),
+        (Type::String, Type::String) => Ok(SubtypingRelation::Subsumes),
 
         // Covariance.
         (Type::List(t1), Type::List(t2)) => subsumes(ctx, t1, t2),
@@ -132,11 +152,11 @@ pub fn subsumes(ctx: &TypingContext, a: &syntax::Type, b: &syntax::Type) -> Subt
         (Type::Arrow(a1, a2), Type::Arrow(b1, b2)) => {
             // first ensure we have the same number of arguments
             if a1.len() != b1.len() {
-                return SubtypingRelation::Norelation;
+                return Ok(SubtypingRelation::Norelation);
             }
             for (codom, dom) in b1.iter().zip(a1) {
-                match subsumes(ctx, codom, dom) {
-                    SubtypingRelation::Norelation => return SubtypingRelation::Norelation,
+                match subsumes(ctx, codom, dom)? {
+                    SubtypingRelation::Norelation => return Ok(SubtypingRelation::Norelation),
                     SubtypingRelation::Subsumes => continue,
                 }
             }
@@ -152,17 +172,17 @@ pub fn subsumes(ctx: &TypingContext, a: &syntax::Type, b: &syntax::Type) -> Subt
                     .iter()
                     .find_map(|(x, t2)| if x == name { Some(t2) } else { None });
                 match field {
-                    None => return SubtypingRelation::Norelation,
-                    Some(t2) => match subsumes(ctx, t1, t2) {
+                    None => return Ok(SubtypingRelation::Norelation),
+                    Some(t2) => match subsumes(ctx, t1, t2)? {
                         SubtypingRelation::Subsumes => continue,
-                        SubtypingRelation::Norelation => return SubtypingRelation::Norelation,
+                        SubtypingRelation::Norelation => return Ok(SubtypingRelation::Norelation),
                     },
                 }
             }
-            SubtypingRelation::Subsumes
+            Ok(SubtypingRelation::Subsumes)
         }
 
-        _ => SubtypingRelation::Norelation,
+        _ => Ok(SubtypingRelation::Norelation),
     }
 }
 
@@ -244,7 +264,7 @@ pub fn infer(ctx: &mut TypingContext, expr: &syntax::Expr) -> Result<syntax::Typ
             Operator::Eq => {
                 let leftty = infer(ctx, left)?;
                 let rightty = infer(ctx, right)?;
-                match subsumes(ctx, &leftty, &rightty) {
+                match subsumes(ctx, &leftty, &rightty)? {
                     SubtypingRelation::Subsumes => Ok(Type::Bool),
                     SubtypingRelation::Norelation => Err(Error::TypeMismatch(leftty, rightty)),
                 }
@@ -316,10 +336,13 @@ pub fn check(ctx: &mut TypingContext, expr: &syntax::Expr, ty: &syntax::Type) ->
             Ok(())
         }
 
+        // If we can infer the type of an expression, then
+        // we check if that type is a subtype of what we're checking
+        // against.
         expr => {
             let inferty = infer(ctx, expr)?;
             // is the inferred type a subtype of the type we expect?
-            match subsumes(ctx, &inferty, ty) {
+            match subsumes(ctx, &inferty, ty)? {
                 SubtypingRelation::Subsumes => Ok(()),
                 SubtypingRelation::Norelation => Err(Error::TypeMismatch(inferty, ty.clone())),
             }
@@ -349,12 +372,12 @@ fn process_toplevel(ctx: &mut TypingContext, def: &syntax::Def) -> Result<(), Er
     }
 }
 
-fn typecheck_program(program: &Vec<syntax::Def>) -> Result<(), Error> {
+pub fn typecheck_program(program: &Vec<syntax::Def>) -> Result<TypingContext, Error> {
     let mut ctx = TypingContext::default();
     for def in program {
         process_toplevel(&mut ctx, def)?;
     }
-    Ok(())
+    Ok(ctx)
 }
 
 #[cfg(test)]
@@ -370,7 +393,7 @@ mod tests {
             vec![(String::from("name"), Type::String)],
         );
         let ctx = Vec::new();
-        let result = subsumes(&ctx, &person, &top);
+        let result = subsumes(&ctx, &person, &top).unwrap();
         assert_eq!(
             result,
             SubtypingRelation::Subsumes,

@@ -200,7 +200,10 @@ pub fn infer(ctx: &mut TypingContext, expr: &syntax::Expr) -> Result<syntax::Typ
             Ok(ty.clone())
         }
         Expr::Bool(..) => Ok(Type::Bool),
-        Expr::Annotation(_, ty) => Ok(ty.clone()),
+        Expr::Annotation(expr, ty) => {
+            check(ctx, expr, ty)?;
+            Ok(ty.clone())
+        }
 
         Expr::Let(name, expr, body) => {
             let ty = infer(ctx, expr)?;
@@ -366,6 +369,7 @@ fn process_toplevel(ctx: &mut TypingContext, def: &syntax::Def) -> Result<(), Er
         Def::Fun(name, expr) => {
             // We expect expr to be annotated with a type
             let ty = infer(ctx, &expr)?;
+            println!("inferred {:?}", ty);
             assume_var_exp(ctx, &name, &ty);
             Ok(())
         }

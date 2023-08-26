@@ -147,6 +147,7 @@ pub fn resolve(ctx: &TypingContext, ty: &syntax::Type) -> Result<syntax::Type, E
     }
 }
 
+// Subtyping rules 
 // Given a context Ctx, a type A, and a type B, is A <: B in Ctx?
 // or is A a subtype of B?
 pub fn subsumes(

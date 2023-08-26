@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+// use std::{cell::RefCell, rc::Rc};
 
 /// The Type Checker.
 use crate::syntax;
@@ -211,7 +211,7 @@ pub fn subsumes(
 // e => T
 // Infer the type of an expression
 pub fn infer(ctx: &mut TypingContext, expr: &syntax::Expr) -> Result<syntax::Type, Error> {
-    let Expr(loc, expr) = expr;
+    let Expr(_loc, expr) = expr;
     match expr {
         ExprOne::Unit => Ok(Type::Unit),
         ExprOne::Natural(..) => Ok(Type::Natural),
@@ -330,7 +330,7 @@ pub fn infer(ctx: &mut TypingContext, expr: &syntax::Expr) -> Result<syntax::Typ
 // e <= T
 // Check that an expression has a specific type
 pub fn check(ctx: &mut TypingContext, expr: &syntax::Expr, ty: &syntax::Type) -> Result<(), Error> {
-    let Expr(loc, exp) = expr;
+    let Expr(_loc, exp) = expr;
     let ty = &resolve(ctx, ty)?;
     match exp {
         ExprOne::Lambda(args, body) => match ty {
@@ -379,9 +379,9 @@ pub fn check(ctx: &mut TypingContext, expr: &syntax::Expr, ty: &syntax::Type) ->
 
 // fn typecheck_type
 
-fn stdlib_typing_context() -> TypingContext {
-    Vec::new()
-}
+// fn stdlib_typing_context() -> TypingContext {
+//     Vec::new()
+// }
 
 fn process_toplevel(ctx: &mut TypingContext, def: &syntax::Def) -> Result<(), Error> {
     use syntax::*;

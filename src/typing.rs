@@ -169,7 +169,7 @@ pub fn subsumes(
         // Covariance.
         (Type::List(t1), Type::List(t2)) => subsumes(ctx, t1, t2),
 
-        // Arrow types are *contravariant* in their arguments and *covariant* in their return types:
+        // Arrow types are *contravariant* in their domain and *covariant* in their codomain:
         // "Be very lenient in what you accept and be very conservative in what you give out."
         (Type::Arrow(a1, a2), Type::Arrow(b1, b2)) => {
             // first ensure we have the same number of arguments

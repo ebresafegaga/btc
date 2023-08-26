@@ -1,4 +1,4 @@
-use std::{error, fmt, str::FromStr, fs::File, io::Read};
+use std::{error, fmt, fs::File, io::Read, str::FromStr};
 
 // A simple cli
 use clap::Parser;
@@ -62,28 +62,30 @@ pub fn typecheck(source: &str) {
         Err(e) => println!("{:?}", e),
         Ok(program) => match typing::typecheck_program(&program) {
             Err(e) => println!("A type error occured: \n {:?}", e),
-            Ok(ctx) => for (name, ty) in ctx {
-                match ty {
-                    typing::Binding::TyStruct(..) => {
-                        println!("{} defined", name)
-                    }
-                    typing::Binding::VarExpr(ty) => {
-                        println!("{} : {:?}", name, ty)
+            Ok(ctx) => {
+                for (name, ty) in ctx.iter().rev() {
+                    match ty {
+                        typing::Binding::TyStruct(..) => {
+                            println!("{} defined", name)
+                        }
+                        typing::Binding::VarExpr(ty) => {
+                            println!("{} : {:?}", name, ty)
+                        }
                     }
                 }
-            },
+            }
         },
     }
 }
 
 pub fn run() {
     let args = Arguments::parse();
-    
+
     let mut file = File::open(args.path).unwrap();
     let mut source = String::new();
     file.read_to_string(&mut source).unwrap();
     match args.mode {
-        Mode::Parse => parse(&source), 
-        Mode::Typecheck => typecheck(&source)
+        Mode::Parse => parse(&source),
+        Mode::Typecheck => typecheck(&source),
     }
 }

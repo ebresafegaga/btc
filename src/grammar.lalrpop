@@ -48,10 +48,10 @@ pub Type : syntax::Type = {
     "Natural" => Type::Natural, 
     "String" => Type::String, 
     "Bool" => Type::Bool,
-    "(" <name: Identifier> ")" => Type::Named(name),
+    "struct" <name: Identifier>  => Type::Named(name),
     "List" "[" <t: Type> "]" => Type::List(Box::new(t)),
     "(" <tys : Comma<Type>> ")" "->" <result: Type> => Type::Arrow(tys, Box::new(result)),
-    <name : Identifier> "{"  <body: Comma<TyStructBody>> "}" => Type::Struct(name, body),
+    // <name : Identifier> "{"  <body: Comma<TyStructBody>> "}" => Type::Struct(name, body),
 }
 
 pub Expr : syntax::Expr = {

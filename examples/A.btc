@@ -1,0 +1,21 @@
+
+struct Person {
+  name : String, 
+  age : Natural 
+}
+
+struct Student {
+  name : String, 
+  age : Natural,
+  class : String,
+}
+
+function simple(other : struct P) -> struct Person {
+    let name = ("foo") ;
+    ((Student { name: name, age: 10, class: "A" }))
+} 
+
+function test() {
+  unit
+}
+

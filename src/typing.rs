@@ -13,15 +13,15 @@ pub enum Binding {
     TyStruct(Vec<(syntax::Name, syntax::Type)>),
 }
 
+
+
+/// The type checking environment.
+// TODO: Use the nested level based environment below 
 // #[derive(Default)]
 // pub struct TypingConext {
 //     current: Rc<Vec<(syntax::Name, Binding)>>,
 //     previous: RefCell<Option<Rc<TypingConext>>>,
 // }
-
-// The typing context contains information about variable bindings
-// and type declarations
-// TODO; Use a nested environment!!
 pub type TypingContext = Vec<(syntax::Name, Binding)>;
 
 // This describes the subtyping relation between two types

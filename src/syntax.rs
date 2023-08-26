@@ -61,11 +61,15 @@ impl fmt::Display for Type {
 
             Type::Arrow(domains, codomain) => {
                 write!(f, "(")?;
-                for domain in domains {
+
+                let len = domains.len();
+                for (i, domain) in domains.iter().enumerate() {
                     domain.fmt(f)?;
-                    // this prints an extra , after the last type
-                    write!(f, ", ")?;
+                    if i < len - 1 {
+                        write!(f, ", ")?;
+                    }
                 }
+
                 write!(f, ")")?;
                 write!(f, " -> ")?;
                 codomain.fmt(f)
@@ -73,14 +77,15 @@ impl fmt::Display for Type {
 
             Type::Struct(name, fields) => {
                 write!(f, "{}", name)?;
-                write!(f, "{{")?;
+                write!(f, " {{ ")?;
 
                 for (name, ty) in fields {
                     write!(f, "{}", name)?;
-                    write!(f, " ")?;
+                    write!(f, " : ")?;
                     ty.fmt(f)?;
+                    write!(f, ", ")?;
                 }
-                
+
                 write!(f, "}}")
             }
         }

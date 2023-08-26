@@ -69,7 +69,7 @@ pub fn typecheck(source: &str) {
                             println!("{} defined", name)
                         }
                         typing::Binding::VarExpr(ty) => {
-                            println!("{} : {:?}", name, ty)
+                            println!("{} : {}", name, ty)
                         }
                     }
                 }

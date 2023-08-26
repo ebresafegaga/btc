@@ -142,7 +142,8 @@ pub fn resolve(ctx: &TypingContext, ty: &syntax::Type) -> Result<syntax::Type, E
                 .collect::<Result<Vec<_>, _>>()?,
         )),
 
-        Type::Natural | Type::Bool | Type::Unit | Type::String | Type::Unknown => Ok(ty.clone()), // Not good, but it will be a base type
+        // Not good, but it will be a base type
+        Type::Natural | Type::Bool | Type::Unit | Type::String | Type::Unknown => Ok(ty.clone()),
     }
 }
 
@@ -210,28 +211,28 @@ pub fn subsumes(
 // e => T
 // Infer the type of an expression
 pub fn infer(ctx: &mut TypingContext, expr: &syntax::Expr) -> Result<syntax::Type, Error> {
-    use syntax::*;
+    let Expr(loc, expr) = expr;
     match expr {
-        Expr::Unit => Ok(Type::Unit),
-        Expr::Natural(..) => Ok(Type::Natural),
-        Expr::String(..) => Ok(Type::String),
-        Expr::Variable(name) => {
+        ExprOne::Unit => Ok(Type::Unit),
+        ExprOne::Natural(..) => Ok(Type::Natural),
+        ExprOne::String(..) => Ok(Type::String),
+        ExprOne::Variable(name) => {
             let ty = lookup_var_expr(ctx, &name)?;
             Ok(ty.clone())
         }
-        Expr::Bool(..) => Ok(Type::Bool),
-        Expr::Annotation(expr, ty) => {
+        ExprOne::Bool(..) => Ok(Type::Bool),
+        ExprOne::Annotation(expr, ty) => {
             check(ctx, expr, ty)?;
             Ok(ty.clone())
         }
 
-        Expr::Let(name, expr, body) => {
+        ExprOne::Let(name, expr, body) => {
             let ty = infer(ctx, expr)?;
             assume_var_exp(ctx, name, &ty);
             infer(ctx, &body)
         }
 
-        Expr::StructIndex(expr, field) => match infer(ctx, expr)? {
+        ExprOne::StructIndex(expr, field) => match infer(ctx, expr)? {
             Type::Struct(name, fields) => {
                 let ty = fields
                     .iter()
@@ -249,7 +250,7 @@ pub fn infer(ctx: &mut TypingContext, expr: &syntax::Expr) -> Result<syntax::Typ
             }
         },
 
-        Expr::Application(f, args) => {
+        ExprOne::Application(f, args) => {
             let fty = infer(ctx, f)?;
             match fty {
                 Type::Arrow(argsty, resultty) => {
@@ -273,7 +274,7 @@ pub fn infer(ctx: &mut TypingContext, expr: &syntax::Expr) -> Result<syntax::Typ
             }
         }
 
-        Expr::Primitive(op, left, right) => match op {
+        ExprOne::Primitive(op, left, right) => match op {
             Operator::Add | Operator::Sub | Operator::Mul | Operator::Div => {
                 check(ctx, left, &Type::Natural)?;
                 check(ctx, right, &Type::Natural)?;
@@ -294,7 +295,7 @@ pub fn infer(ctx: &mut TypingContext, expr: &syntax::Expr) -> Result<syntax::Typ
             }
         },
 
-        Expr::Struct(name, body) => {
+        ExprOne::Struct(name, body) => {
             let objectty = lookup_ty_struct(ctx, name)?.clone();
             if objectty.len() != body.len() {
                 return Err(Error::StructArgMismatch);
@@ -316,10 +317,12 @@ pub fn infer(ctx: &mut TypingContext, expr: &syntax::Expr) -> Result<syntax::Typ
             Ok(Type::Struct(name.clone(), objectty))
         }
 
-        Expr::List(..) | Expr::Lambda(..) | Expr::If(..) => Err(Error::NeedsMoreTypeAnnonation),
+        ExprOne::List(..) | ExprOne::Lambda(..) | ExprOne::If(..) => {
+            Err(Error::NeedsMoreTypeAnnonation)
+        }
 
         // Only used internally
-        Expr::Unknown => Ok(Type::Unknown),
+        ExprOne::Unknown => Ok(Type::Unknown),
     }
 }
 
@@ -327,10 +330,10 @@ pub fn infer(ctx: &mut TypingContext, expr: &syntax::Expr) -> Result<syntax::Typ
 // e <= T
 // Check that an expression has a specific type
 pub fn check(ctx: &mut TypingContext, expr: &syntax::Expr, ty: &syntax::Type) -> Result<(), Error> {
-    use syntax::*;
+    let Expr(loc, exp) = expr;
     let ty = &resolve(ctx, ty)?;
-    match expr {
-        Expr::Lambda(args, body) => match ty {
+    match exp {
+        ExprOne::Lambda(args, body) => match ty {
             Type::Arrow(domain, codomain) => {
                 if args.len() != domain.len() {
                     return Err(Error::LambdaArgMismatch);
@@ -346,14 +349,14 @@ pub fn check(ctx: &mut TypingContext, expr: &syntax::Expr, ty: &syntax::Type) ->
             ))),
         },
 
-        Expr::List(exprs) => {
+        ExprOne::List(exprs) => {
             for expr in exprs {
                 check(ctx, expr, ty)?;
             }
             Ok(())
         }
 
-        Expr::If(predicate, t, f) => {
+        ExprOne::If(predicate, t, f) => {
             check(ctx, predicate, &Type::Bool)?;
             check(ctx, t, ty)?;
             check(ctx, f, ty)?;
@@ -363,7 +366,7 @@ pub fn check(ctx: &mut TypingContext, expr: &syntax::Expr, ty: &syntax::Type) ->
         // If we can infer the type of an expression, then
         // we check if that type is a subtype of what we're checking
         // against.
-        expr => {
+        _ => {
             let inferty = infer(ctx, expr)?;
             // is the inferred type a subtype of the type we expect?
             match subsumes(ctx, &inferty, ty)? {
@@ -407,7 +410,6 @@ pub fn typecheck_program(program: &Vec<syntax::Def>) -> Result<TypingContext, Er
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::syntax::*;
 
     #[test]
     fn test_subtyping() {

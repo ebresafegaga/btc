@@ -40,9 +40,34 @@ pub enum Type {
     Unknown,
 }
 
-// An expression
+// A source location
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum Loc {
+    // A location in the source program
+    Known { start: usize, end: usize },
+    // An internally generated location used for desugaring
+    // syntax. The the location it contains is the closest
+    // loc. We can keep also keep track of information that
+    // tells us if the position comes afer or before loc.
+    Generated { start: usize, end: usize },
+}
+
+impl Loc {
+    pub fn new(start: usize, end: usize) -> Loc {
+        Loc::Known { start, end }
+    }
+
+    pub fn generate(&self) -> Loc {
+        match *self {
+            Loc::Known { start, end } => Loc::Generated { start, end },
+            Loc::Generated { start, end } => Loc::Generated { start, end },
+        }
+    }
+}
+
+// An (non recursive) expression
 #[derive(Debug)]
-pub enum Expr {
+pub enum ExprOne<T> {
     // e.g ()
     Unit,
     // e.g x, y, foo
@@ -54,27 +79,31 @@ pub enum Expr {
     // e.g true, false
     Bool(bool),
     // e.g (true : Bool)
-    Annotation(Box<Expr>, Type),
+    Annotation(Box<T>, Type),
     // e.g let name = "foo"; length (name)
-    Let(Name, Box<Expr>, Box<Expr>),
+    Let(Name, Box<T>, Box<T>),
     // e.g [1, 3, 3]
-    List(Vec<Expr>),
+    List(Vec<T>),
     // if true { ... } else { ... }
-    If(Box<Expr>, Box<Expr>, Box<Expr>),
+    If(Box<T>, Box<T>, Box<T>),
     // e.g function (x, y) { x + y }
-    Lambda(Vec<Name>, Box<Expr>),
+    Lambda(Vec<Name>, Box<T>),
     // Also called "function call": e.g add (10, 12)
-    Application(Box<Expr>, Vec<Expr>),
+    Application(Box<T>, Vec<T>),
     // e.g 1 + 2, x < 10
-    Primitive(Operator, Box<Expr>, Box<Expr>),
+    Primitive(Operator, Box<T>, Box<T>),
     // e.g Student { name: "foo"}
-    Struct(Name, Vec<(Name, Expr)>),
+    Struct(Name, Vec<(Name, T)>),
     // e.g person.name
-    StructIndex(Box<Expr>, Name),
+    StructIndex(Box<T>, Name),
     // Also meant to be used internally. Can be useful for
     // creating "dummy" placeholders while developing / debugging.
     Unknown,
 }
+
+// A full expression decorated with a location
+#[derive(Debug)]
+pub struct Expr(pub Loc, pub ExprOne<Expr>);
 
 // Top level definitions
 #[derive(Debug)]

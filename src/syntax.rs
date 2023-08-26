@@ -123,7 +123,7 @@ impl Loc {
     }
 }
 
-// An (non recursive) expression
+// A (non recursive) expression
 #[derive(Debug)]
 pub enum ExprOne<T> {
     // e.g ()
@@ -159,7 +159,7 @@ pub enum ExprOne<T> {
     Unknown,
 }
 
-// A fully (recursive) expression decorated with a location
+// A fully (recursive) expression, decorated with a location
 #[derive(Debug)]
 pub struct Expr(pub Loc, pub ExprOne<Expr>);
 

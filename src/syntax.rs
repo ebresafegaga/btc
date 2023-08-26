@@ -159,7 +159,7 @@ pub enum ExprOne<T> {
     Unknown,
 }
 
-// A full expression decorated with a location
+// A fully (recursive) expression decorated with a location
 #[derive(Debug)]
 pub struct Expr(pub Loc, pub ExprOne<Expr>);
 

@@ -85,6 +85,8 @@ pub Expr : syntax::Expr = {
     "(" <name: Identifier> "{" <body: Comma<TermStructBody>> "}" ")" => Expr::Struct(name, body),
 
     "(" <a: Expr> <op: Operator> <b: Expr> ")" => Expr::Primitive(op, Box::new(a), Box::new(b)),
+
+    <e: Expr> "." <field: Identifier> => Expr::StructIndex(Box::new(e), field),
 }
 
 pub Return : Type = {

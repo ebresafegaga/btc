@@ -51,12 +51,12 @@ pub enum Error {
     // Cannot infer a type
     NeedsMoreTypeAnnonation,
     // You used an undefined variable.
-    UnboundVariable,
+    UnboundVariable(syntax::Name),
     // You used an undefined type name.
-    UnboundType,
+    UnboundType(syntax::Name),
     // We know the type of the struct and the field you used
     // is not present in the type.
-    UnboundFieldName,
+    UnboundFieldName(syntax::Name),
     // Indexing a struct with a field that is not bound in the
     // the expected struct type. The vector contains the fields
     // available in the structure
@@ -96,7 +96,7 @@ pub fn lookup_ty_struct<'a>(
             _ => None,
         })
         .find_map(|(x, ty)| if x == name { Some(ty) } else { None })
-        .ok_or(Error::UnboundType)
+        .ok_or(Error::UnboundType(name.clone()))
 }
 
 // Search the context for a variable binding
@@ -110,7 +110,7 @@ pub fn lookup_var_expr<'a>(
             _ => None,
         })
         .find_map(|(x, ty)| if x == name { Some(ty) } else { None })
-        .ok_or(Error::UnboundVariable)
+        .ok_or(Error::UnboundVariable(name.clone()))
 }
 
 // This returns a type with the *outer* `Named` layers peeled off
@@ -287,7 +287,7 @@ pub fn infer(ctx: &mut TypingContext, expr: &syntax::Expr) -> Result<syntax::Typ
                         .iter()
                         .find_map(|(x, ty)| if x == name { Some(ty) } else { None });
                     match entry {
-                        None => return Err(Error::UnboundFieldName),
+                        None => return Err(Error::UnboundFieldName(name.clone())),
                         Some(ty) => check(ctx, expr, ty),
                     }
                 })
@@ -369,7 +369,6 @@ fn process_toplevel(ctx: &mut TypingContext, def: &syntax::Def) -> Result<(), Er
         Def::Fun(name, expr) => {
             // We expect expr to be annotated with a type
             let ty = infer(ctx, &expr)?;
-            println!("inferred {:?}", ty);
             assume_var_exp(ctx, &name, &ty);
             Ok(())
         }

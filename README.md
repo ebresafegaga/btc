@@ -1,1 +1,1 @@
-A programming language with a bidirectional type checker.
+A programming language implementation to learn about bidirectional type checkers.

@@ -108,6 +108,7 @@ pub Def : syntax::Def = {
     "function" <name: Identifier> "("  <args: Comma<TyStructBody>> ")" <codomain: Return> "{" <body: Expr> "}" => {
         let (args, tys) : (Vec<_>, Vec<_>)= args.into_iter().unzip();
         let domain = if tys.is_empty() { vec![Type::Unit] } else { tys };
+        let args = if args.is_empty() { vec![String::from("unit")] } else { args };
         let f = Type::Arrow(domain, Box::new(codomain)); 
         let lambda = Expr::Lambda(args, Box::new(body));
         Def::Fun(name, Expr::Annotation(Box::new(lambda), f))

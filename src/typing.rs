@@ -13,10 +13,8 @@ pub enum Binding {
     TyStruct(Vec<(syntax::Name, syntax::Type)>),
 }
 
-
-
 /// The type checking environment.
-// TODO: Use the nested level based environment below 
+// TODO: Use the nested level based environment below
 // #[derive(Default)]
 // pub struct TypingConext {
 //     current: Rc<Vec<(syntax::Name, Binding)>>,
@@ -114,10 +112,10 @@ pub fn lookup_var_expr<'a>(
         .ok_or(Error::UnboundVariable(name.clone()))
 }
 
-// This returns a type with the all `Named` types replaces with their 
+// This returns a type with the all `Named` types replaces with their
 // concrete type
 // TODO: create a generic tree walker
-pub fn resolve<'a>(ctx: &'a TypingContext, ty: &syntax::Type) -> Result<syntax::Type, Error> {
+pub fn resolve(ctx: &TypingContext, ty: &syntax::Type) -> Result<syntax::Type, Error> {
     match ty {
         Type::Named(name) => {
             let resolved = lookup_ty_struct(ctx, name)?;
@@ -144,7 +142,7 @@ pub fn resolve<'a>(ctx: &'a TypingContext, ty: &syntax::Type) -> Result<syntax::
                 .collect::<Result<Vec<_>, _>>()?,
         )),
 
-        ty => Ok(ty.clone()), // Not good, but it will be a base type
+        Type::Natural | Type::Bool | Type::Unit | Type::String | Type::Unknown => Ok(ty.clone()), // Not good, but it will be a base type
     }
 }
 

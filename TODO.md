@@ -12,3 +12,4 @@
 * [ ] Check that a struct expr has all the required fields 
 * [ ] Attach positions for error reporting
 * [ ] Enums
+* [ ] Parametric polymorphism

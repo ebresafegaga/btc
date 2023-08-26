@@ -13,7 +13,7 @@ struct Student {
 function simple(other : struct P) -> struct Person {
     let name = ("foo") ;
     ((Student { name: name, age: 10, class: "A" }))
-} 
+}
 
 function test() {
   unit

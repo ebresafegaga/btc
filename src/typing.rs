@@ -2,6 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 /// The Type Checker.
 use crate::syntax;
+use syntax::*;
 
 // An element in the type checking context
 #[derive(Debug)]
@@ -113,16 +114,37 @@ pub fn lookup_var_expr<'a>(
         .ok_or(Error::UnboundVariable(name.clone()))
 }
 
-// This returns a type with the *outer* `Named` layers peeled off
-pub fn resolve_type<'a>(ctx: &'a TypingContext, ty: &syntax::Type) -> Result<syntax::Type, Error> {
-    use syntax::*;
+// This returns a type with the all `Named` types replaces with their 
+// concrete type
+// TODO: create a generic tree walker
+pub fn resolve<'a>(ctx: &'a TypingContext, ty: &syntax::Type) -> Result<syntax::Type, Error> {
     match ty {
         Type::Named(name) => {
             let resolved = lookup_ty_struct(ctx, name)?;
             Ok(Type::Struct(name.clone(), resolved.clone())) // Not good
         }
 
-        ty => Ok(ty.clone()), // Not good
+        Type::Arrow(domain, codomain) => Ok(Type::Arrow(
+            domain
+                .clone()
+                .into_iter()
+                .map(|ty| resolve(ctx, &ty))
+                .collect::<Result<Vec<_>, _>>()?,
+            Box::new(resolve(ctx, codomain)?),
+        )),
+
+        Type::List(ty) => Ok(Type::List(Box::new(resolve(ctx, &*ty)?))),
+
+        Type::Struct(name, fields) => Ok(Type::Struct(
+            name.clone(),
+            fields
+                .clone()
+                .iter()
+                .map(|(field, ty)| resolve(ctx, ty).map(|ty| (field.clone(), ty)))
+                .collect::<Result<Vec<_>, _>>()?,
+        )),
+
+        ty => Ok(ty.clone()), // Not good, but it will be a base type
     }
 }
 
@@ -134,8 +156,8 @@ pub fn subsumes(
     b: &syntax::Type,
 ) -> Result<SubtypingRelation, Error> {
     use syntax::*;
-    let a = resolve_type(ctx, a)?;
-    let b = resolve_type(ctx, b)?;
+    let a = resolve(ctx, a)?;
+    let b = resolve(ctx, b)?;
 
     match (&a, &b) {
         // A base type is a subtype of itself
@@ -308,6 +330,7 @@ pub fn infer(ctx: &mut TypingContext, expr: &syntax::Expr) -> Result<syntax::Typ
 // Check that an expression has a specific type
 pub fn check(ctx: &mut TypingContext, expr: &syntax::Expr, ty: &syntax::Type) -> Result<(), Error> {
     use syntax::*;
+    let ty = &resolve(ctx, ty)?;
     match expr {
         Expr::Lambda(args, body) => match ty {
             Type::Arrow(domain, codomain) => {
